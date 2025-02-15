@@ -5,6 +5,7 @@
 
   # Flake inputs
   inputs = {
+    pkg2zip.url = "git@github.com:lakrestofer/pkg2zip";
     flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -50,8 +51,25 @@
           devShells.default = pkgs.mkShell {
             inputsFrom = [ config.flake-root.devShell ]; # Provides $FLAKE_ROOT in dev shell
             packages = with pkgs; [
+              curl
+              (python3.withPackages (
+                p: with p; ([
+                  lxml
+                ])
+              ))
             ];
             env = {
+              LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+                pkgs.stdenv.cc.cc.lib
+                pkgs.libz
+              ];
+            };
+          };
+          packages = {
+            pkg2zip = builtins.fetchTarball {
+              url = "https://github.com/lusid1/pkg2zip/archive/refs/tags/2.6.tar.gz";
+              sha256 = "";
+
             };
           };
         };
