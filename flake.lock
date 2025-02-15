@@ -75,12 +75,47 @@
         "url": "https://github.com/NixOS/nixpkgs/archive/072a6db25e947df2f31aab9eccd0ab75d5b2da11.tar.gz"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1739446958,
+        "narHash": "sha256-+/bYK3DbPxMIvSL4zArkMX0LQvS7rzBKXnDXLfKyRVc=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "2ff53fe64443980e139eaa286017f53f88336dd0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "pkg2zip": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1739626443,
+        "narHash": "sha256-x92AYU5iwrWckU2kFerID3hM9+zSemsvR2PfNKCrVmc=",
+        "owner": "lakrestofer",
+        "repo": "pkg2zip",
+        "rev": "a86ee57638c9b50d3dd9b4f5c9e5d4fb90a273b1",
+        "type": "github"
+      },
+      "original": {
+        "owner": "lakrestofer",
+        "repo": "pkg2zip",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "flake-parts": "flake-parts",
         "flake-root": "flake-root",
         "flake-schemas": "flake-schemas",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "pkg2zip": "pkg2zip"
       }
     }
   },

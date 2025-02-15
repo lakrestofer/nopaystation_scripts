@@ -5,7 +5,7 @@
 
   # Flake inputs
   inputs = {
-    pkg2zip.url = "git@github.com:lakrestofer/pkg2zip";
+    pkg2zip.url = "github:/lakrestofer/pkg2zip";
     flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*";
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-parts.url = "github:hercules-ci/flake-parts";
@@ -19,6 +19,7 @@
       flake-schemas,
       nixpkgs,
       flake-parts,
+      pkg2zip,
       ...
     }@inputs:
     flake-parts.lib.mkFlake { inherit inputs self; } {
@@ -50,6 +51,9 @@
           flake-root.projectRootFile = "flake.nix"; # Not necessary, as flake.nix is the default
           devShells.default = pkgs.mkShell {
             inputsFrom = [ config.flake-root.devShell ]; # Provides $FLAKE_ROOT in dev shell
+            buildInputs = [
+              inputs.pkg2zip.packages.${system}.default
+            ];
             packages = with pkgs; [
               curl
               (python3.withPackages (
