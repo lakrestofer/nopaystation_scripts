@@ -77,9 +77,38 @@
 
               installPhase = ''
                 mkdir -p $out/bin
-                cp -r nps_*.sh pyNPU.py $out/bin
+                cp nps_*.sh $out/bin
+                cp pyNPU.py $out/bin
+                cp functions.sh $out/bin
                 chmod +x $out/bin/*
+                chmod +x $out/bin/functions.sh
+                chmod +x $out/bin/pyNPU.py
 
+                wrapProgram $out/bin/pyNPU.py \
+                              --prefix PATH : $out/bin:${
+                                pkgs.lib.makeBinPath [
+                                  pkgs.curl
+                                  (pkgs.python3.withPackages (
+                                    p: with p; ([
+                                      lxml
+                                    ])
+                                  ))
+                                  inputs'.pkg2zip.packages.default
+                                ]
+                              }
+
+                wrapProgram $out/bin/functions.sh \
+                              --prefix PATH : $out/bin:${
+                                pkgs.lib.makeBinPath [
+                                  pkgs.curl
+                                  (pkgs.python3.withPackages (
+                                    p: with p; ([
+                                      lxml
+                                    ])
+                                  ))
+                                  inputs'.pkg2zip.packages.default
+                                ]
+                              }
                 for script in $out/bin/*; do
                   wrapProgram $script \
                               --prefix PATH : $out/bin:${
