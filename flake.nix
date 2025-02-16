@@ -38,6 +38,7 @@
         {
           pkgs,
           self',
+          inputs',
           system,
           config,
           ...
@@ -52,27 +53,53 @@
           devShells.default = pkgs.mkShell {
             inputsFrom = [ config.flake-root.devShell ]; # Provides $FLAKE_ROOT in dev shell
             buildInputs = [
-              inputs.pkg2zip.packages.${system}.default
+              self'.packages.default
             ];
-            packages = with pkgs; [
-              curl
-              (python3.withPackages (
-                p: with p; ([
-                  lxml
-                ])
-              ))
-            ];
-            env = {
-              LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
-                pkgs.stdenv.cc.cc.lib
-                pkgs.libz
-              ];
-            };
           };
           packages = {
-            pkg2zip = builtins.fetchTarball {
-              url = "https://github.com/lusid1/pkg2zip/archive/refs/tags/2.6.tar.gz";
-              sha256 = "";
+            default = pkgs.stdenv.mkDerivation {
+              name = "nopaystation_scripts";
+              version = "0.0.1";
+
+              src = ./.;
+              nativeBuildInputs = [ pkgs.makeWrapper ];
+              buildInputs = [
+                pkgs.curl
+                (pkgs.python3.withPackages (
+                  p: with p; ([
+                    lxml
+                  ])
+                ))
+                inputs'.pkg2zip.packages.default
+              ];
+
+              buildPhase = "";
+
+              installPhase = ''
+                mkdir -p $out/bin
+                cp -r nps_*.sh pyNPU.py $out/bin
+                chmod +x $out/bin/*
+
+                for script in $out/bin/*; do
+                  wrapProgram $script \
+                              --prefix PATH : $out/bin:${
+                                pkgs.lib.makeBinPath [
+                                  pkgs.curl
+                                  (pkgs.python3.withPackages (
+                                    p: with p; ([
+                                      lxml
+                                    ])
+                                  ))
+                                  inputs'.pkg2zip.packages.default
+                                ]
+                              }
+                done
+              '';
+              meta = {
+                description = "Collection of nopaystation scripts";
+                license = pkgs.lib.licenses.gpl3Only;
+                platforms = pkgs.lib.platforms.linux;
+              };
 
             };
           };
