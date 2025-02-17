@@ -78,55 +78,38 @@ do
     then
         >&2 echo "zRIF key is missing."
         MISSING_COUNT=$((${MISSING_COUNT} + 1))
-    else
-        if [ ! -d "${MY_PATH}/${DESTDIR}_dlc" ]
-        then
-            mkdir "${MY_PATH}/${DESTDIR}_dlc"
-        fi
-        cd "${MY_PATH}/${DESTDIR}_dlc"
-
-        if find . -maxdepth 1 -type f -name "*[${TITLE_ID}]*[DLC*.${ext}" | grep -q -E "\[${TITLE_ID}\].*\[DLC.*\.${ext}"
-        then
-            EXISTING_COUNT=0
-            for FOUND_FILE in "$(find . -maxdepth 1 -type f -name "*[${TITLE_ID}]*[DLC*.${ext}" | grep -E "\[${TITLE_ID}\].*\[DLC.*\.${ext}" | sed 's@\./@@g')"
-            do
-                if [ "$(file -b --mime-type "${FOUND_FILE}")" = "${mime_type}" ]
-                then
-                    EXISTING_COUNT=$((${EXISTING_COUNT} + 1))
-                    # print this to stderr
-                    >&2 echo "File \"${FOUND_FILE}\" already exists."
-                else
-                    EXISTING_COUNT=$((${EXISTING_COUNT} + 1))
-                    # print this to stderr
-                    >&2 echo "File \"${FOUND_FILE}\" already exists."
-                    >&2 echo "But it doesn't seem to be a valid ${ext} file"
-                fi
-            done
-            >&2 echo ""
-            >&2 echo "${EXISTING_COUNT} DLC(s) already present"
-            cd "${MY_PATH}"
-            exit 5
-        else
-            my_download_file "${LINK}" "${GAME_ID}_dlc.pkg"
-            FILE_SHA256="$(my_sha256 "${GAME_ID}_dlc.pkg")"
-            compare_checksum "${LIST_SHA256}" "${FILE_SHA256}"
-
-            # get file name and modify it
-            pkg2zip -l "${GAME_ID}_dlc.pkg" | sed 's/\.zip//g' > "${GAME_ID}_dlc.txt"
-            MY_FILE_NAME="$(cat "${GAME_ID}_dlc.txt")"
-            MY_FILE_NAME="$(region_rename "${MY_FILE_NAME}")"
-
-            # extract files and compress them with t7z
-            test -d "addcont/" && rm -rf "addcont/"
-            pkg2zip -x "${GAME_ID}_dlc.pkg" "${KEY}"
-            # add the -rs parameter until a bug on the t7z port for FreeBSD is fixed
-            t7z -ba -rs a "${MY_FILE_NAME}.7z" "addcont/"
-            rm -rf "addcont/"
-            rm "${GAME_ID}_dlc.pkg"
-            rm "${GAME_ID}_dlc.txt"
-            cd "${MY_PATH}"
-        fi
     fi
+
+
+    if [ ! -d "${MY_PATH}/${DESTDIR}_dlc" ]
+    then
+        mkdir "${MY_PATH}/${DESTDIR}_dlc"
+    fi
+    cd "${MY_PATH}/${DESTDIR}_dlc"
+
+    my_download_file "${LINK}" "${GAME_ID}_dlc.pkg"
+    FILE_SHA256="$(my_sha256 "${GAME_ID}_dlc.pkg")"
+    compare_checksum "${LIST_SHA256}" "${FILE_SHA256}"
+
+    # get file name and modify it
+    pkg2zip -l "${GAME_ID}_dlc.pkg" | sed 's/\.zip//g' > "${GAME_ID}_dlc.txt"
+    MY_FILE_NAME="$(cat "${GAME_ID}_dlc.txt")"
+    MY_FILE_NAME="$(region_rename "${MY_FILE_NAME}")"
+
+
+    # extract files and compress them with t7z
+    test -d "addcont/" && rm -rf "addcont/"
+    pkg2zip -x "${GAME_ID}_dlc.pkg" "${KEY}"
+    # add the -rs parameter until a bug on the t7z port for FreeBSD is fixed
+    # t7z -ba -rs a "${MY_FILE_NAME}.7z" "addcont/"
+    zip -r "${MY_FILE_NAME}.zip" "addcont/"
+    rm -rf "addcont/"
+    rm "${GAME_ID}_dlc.pkg"
+    rm "${GAME_ID}_dlc.txt"
+    cd "${MY_PATH}"
+
+    echo "$KEY" >> "${MY_FILE_NAME}_dlc_key.txt"
+    
 done
 if [ ${MISSING_COUNT} -gt 0 ]
 then

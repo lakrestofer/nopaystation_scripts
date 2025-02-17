@@ -83,40 +83,27 @@ elif [ "${LINK}" = "CART ONLY" ]
 then
     echo "\"${GANE_ID}\" is only available via cartridge"
     exit 3
-else
-    if find . -maxdepth 1 -type f -name "*[${TITLE_ID}]*.${ext}" | grep -q -E "\[${TITLE_ID}\].*\.${ext}"
-    then
-        FOUND_FILE=$(find . -maxdepth 1 -type f -name "*[${TITLE_ID}]*.${ext}" | grep -E "\[${TITLE_ID}\].*\.${ext}" | sed 's@\./@@g')
-        # write package name into txt file for depending steps like downloading dlc and update
-        echo "${FOUND_FILE}" | sed "s/\.${ext}//g" > "${TITLE_ID}.txt"
-
-        # test if archive is a ${ext} file
-        if [ "$(file -b --mime-type "${FOUND_FILE}")" = "${mime_type}" ]
-        then
-            # print this to stderr
-            >&2 echo "File \"${FOUND_FILE}\" already exists."
-            exit 5
-        else
-            # print this to stderr
-            >&2 echo "File \"${FOUND_FILE}\" already exists."
-            >&2 echo "But it doesn't seem to be a valid ${ext} file"
-            exit 5
-        fi
-    else
-        my_download_file "${LINK}" "${TITLE_ID}.pkg"
-        FILE_SHA256="$(my_sha256 "${TITLE_ID}.pkg")"
-        compare_checksum "${LIST_SHA256}" "${FILE_SHA256}"
-
-        # get file name and modify it
-        pkg2zip -l "${TITLE_ID}.pkg" | sed 's/.zip//g' > "${TITLE_ID}.txt"
-        MY_FILE_NAME="$(cat "${TITLE_ID}.txt")"
-        MY_FILE_NAME="$(region_rename "${MY_FILE_NAME}")"
-        test -d "app/" && rm -rf "app/"
-        pkg2zip -x "${TITLE_ID}.pkg" "${KEY}"
-        # add the -rs parameter until a bug on the t7z port for FreeBSD is fixed
-        t7z -ba -rs a "${MY_FILE_NAME}.${ext}" "app/"
-        rm -rf "app/"
-        rm "${TITLE_ID}.pkg"
-    fi
 fi
+
+echo "Game Key:"
+echo "$KEY"
+
+my_download_file "${LINK}" "${TITLE_ID}.pkg"
+FILE_SHA256="$(my_sha256 "${TITLE_ID}.pkg")"
+compare_checksum "${LIST_SHA256}" "${FILE_SHA256}"
+
+# get file name and modify it
+pkg2zip -l "${TITLE_ID}.pkg" | sed 's/.zip//g' > "${TITLE_ID}.txt"
+MY_FILE_NAME="$(cat "${TITLE_ID}.txt")"
+MY_FILE_NAME="$(region_rename "${MY_FILE_NAME}")"
+
+echo "$KEY" >> "${MY_FILE_NAME}_game_key.txt"
+
+test -d "app/" && rm -rf "app/"
+pkg2zip -x "${TITLE_ID}.pkg" "${KEY}"
+# add the -rs parameter until a bug on the t7z port for FreeBSD is fixed
+# t7z -ba -rs a "${MY_FILE_NAME}.7z" "app/"
+zip -r "${MY_FILE_NAME}.zip" "app/"
+rm -rf "app/"
+rm "${TITLE_ID}.pkg"
 exit 0

@@ -62,8 +62,8 @@ GAME_NAME="$(pyNPU.py --name --title-id "${TITLE_ID}")"
 # make DESTDIR overridable
 if [ -z "${DESTDIR}" ]
 then
-    RENAME=1
-    DESTDIR="${TITLE_ID}"
+    echo "DESTDIR not supplied, exiting"
+    exit 1
 else
     RENAME=0
 fi
@@ -89,49 +89,20 @@ pyNPU.py --changelog --title-id "${TITLE_ID}" > "${MY_PATH}/${DESTDIR}_update/ch
 for i in ${LIST}
 do
     cd "${MY_PATH}/${DESTDIR}_update"
-    if find . -maxdepth 1 -type f -name "*[${TITLE_ID}]*.${ext}" | grep -q -E "\[${TITLE_ID}\].*\.${ext}"
-    then
-        COUNT=0
-        for FOUND_FILE in "$(find . -maxdepth 1 -type f -name "*[${TITLE_ID}]*[PATCH]*.${ext}" | grep -E "\[${TITLE_ID}\].*\[PATCH\].*\.${ext}" | sed 's@\./@@g')"
-        do
-            if [ "$(file -b --mime-type "${FOUND_FILE}")" = "${mime_type}" ]
-            then
-                COUNT=$((${COUNT} + 1))
-                # print this to stderr
-                >&2 echo "File \"${FOUND_FILE}\" already exists."
-            else
-                COUNT=$((${COUNT} + 1))
-                # print this to stderr
-                >&2 echo "File \"${FOUND_FILE}\" already exists."
-                >&2 echo "But it doesn't seem to be a valid ${ext} file"
-            fi
-        done
-        >&2 echo ""
-        >&2 echo "${COUNT} updates already present"
-        cd "${MY_PATH}"
-        exit 5
-    else
-        my_download_file "${i}" "${TITLE_ID}_update.pkg"
+    my_download_file "${i}" "${TITLE_ID}_update.pkg"
 
-        pkg2zip -l "${TITLE_ID}_update.pkg" | sed 's/\.zip//g' > "${TITLE_ID}_update.txt"
-        MY_FILE_NAME="$(cat "${TITLE_ID}_update.txt")"
-        MY_FILE_NAME="$(region_rename "${MY_FILE_NAME}")"
+    pkg2zip -l "${TITLE_ID}_update.pkg" | sed 's/\.zip//g' > "${TITLE_ID}_update.txt"
+    MY_FILE_NAME="$(cat "${TITLE_ID}_update.txt")"
+    MY_FILE_NAME="$(region_rename "${MY_FILE_NAME}")"
 
-        # extract files and compress them with t7z
-        test -d "patch/" && rm -rf "patch/"
-        pkg2zip -x "${TITLE_ID}_update.pkg"
-        # add the -rs parameter until a bug on the t7z port for FreeBSD is fixed
-        t7z  -ba -rs a "${MY_FILE_NAME}.${ext}" "patch/"
-        rm -rf "patch/"
-        rm "${TITLE_ID}_update.pkg"
-        rm "${TITLE_ID}_update.txt"
-        cd "${MY_PATH}"
-    fi
+    # extract files and compress them with t7z
+    test -d "patch/" && rm -rf "patch/"
+    pkg2zip -x "${TITLE_ID}_update.pkg"
+    # add the -rs parameter until a bug on the t7z port for FreeBSD is fixed
+    # t7z  -ba -rs a "${MY_FILE_NAME}.7z" "patch/"
+    zip -r "${MY_FILE_NAME}.zip" "patch/"
+    rm -rf "patch/"
+    rm "${TITLE_ID}_update.pkg"
+    rm "${TITLE_ID}_update.txt"
+    cd "${MY_PATH}"
 done
-
-if [ ${RENAME} -eq 1 ]
-then
-    # this code is pretty ugly. It's just to make sure the directory naming scheme behaves like when overriding $DESTDIR with the game name
-    REGION_NAME="$(basename "$(find "${MY_PATH}/${DESTDIR}_update" -type f -name "*.${ext}" | head -n 1)" | sed "s/.*\[${TITLE_ID}\] \[//g" | sed 's/\] \[PATCH.*//')"
-    mv "${MY_PATH}/${DESTDIR}_update" "${MY_PATH}/${GAME_NAME} [${TITLE_ID}] [${REGION_NAME}]_update"
-fi

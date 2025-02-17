@@ -13,26 +13,7 @@ my_usage(){
     echo ""
     echo "Parameters:"
     echo "--nps-dir|-d <DIR>               path to the directory containing the tsv files"
-    echo "--torrent|-c <ANNOUNCE URL>      Enables torrent creation. Needs announce url"
-    echo "--source|-s <SOURCE TAG>         Enables source flag. Needs source tag as argument"
-    echo "--all|-a                         Download all update instead of only latest"
-    echo ""
-    echo "The \"--source\" and \"--torrent\" parameter are optional. All other"
-    echo "parameters are required. The source parameter"
-    echo "is required for private torrent trackers only"
-    echo ""
-    echo "Usage:"
-    echo "${0} --nps-dir </path/to/nps/directory> [--torrent \"http://announce.url\"] [--source <SOURCE_TAG>]"
-}
-
-my_mktorrent(){
-    local TORRENT_SOURCE="${1}"
-    if [ "${SOURCE_ENABLE}" -eq 0 ]
-    then
-        mktorrent -dpa "${ANNOUNCE_URL}" "${TORRENT_SOURCE}"
-    else
-        mktorrent -dpa "${ANNOUNCE_URL}" -s "${SOURCE_TAG}" "${TORRENT_SOURCE}"
-    fi
+    echo "--title-id|-t <ID>               ID of game"
 }
 
 ### check if nps tsv file directory exists
@@ -46,10 +27,6 @@ test_nps_dir() {
     fi
 }
 
-SOURCE_ENABLE=0
-CREATE_TORRENT=0
-UPDATE_ALL=0
-
 while [ ${#} -ge 1 ]
 do
     opt=${1}
@@ -62,30 +39,11 @@ do
             TITLE_ID="${1}"
             shift
             ;;
-        -c|--torrent)
-            test -n "${1}"
-            exit_if_fail "\"-c\" used without torrent announce URL"
-            check_announce_url "${1}"
-            ANNOUNCE_URL="${1}"
-            CREATE_TORRENT=1
-            shift
-            ;;
-        -s|--source)
-            test -n "${1}"
-            exit_if_fail "\"-s\" used without source flag argument used"
-            SOURCE_TAG="${1}"
-            SOURCE_ENABLE=1
-            shift
-            ;;
         -d|--nps-dir)
             test -n "${1}"
             exit_if_fail "\"-d\" used without directory path argument used"
             test_nps_dir "${1}"
             NPS_DIR="${1}"
-            shift
-            ;;
-        -a|--all)
-            UPDATE_ALL=1
             shift
             ;;
         *)
@@ -99,10 +57,6 @@ done
 
 # check if necessary binaries are available
 MY_BINARIES="pkg2zip sed"
-if [ ${CREATE_TORRENT} -eq 1 ]
-then
-    MY_BINARIES="${MY_BINARIES} mktorrent"
-fi
 check_binaries "${MY_BINARIES}"
 
 
@@ -154,35 +108,10 @@ GAME_NAME="$(region_rename "${GAME_NAME}")"
 ZIP_FILENAME="${GAME_NAME}.${ext}"
 
 ### Download available updates. With parameter -a all updates
-if [ "${UPDATE_ALL}" -eq 1 ]
-then
-    DESTDIR="${GAME_NAME}" nps_update.sh -a "${TITLE_ID}"
-else
-    DESTDIR="${GAME_NAME}" nps_update.sh "${TITLE_ID}"
-fi
+DESTDIR="${GAME_NAME}" nps_update.sh "${TITLE_ID}"
 
 ### Download available DLC
 DESTDIR="${GAME_NAME}" nps_dlc.sh "${NPS_DIR}/PSV_DLCS.tsv" "${TITLE_ID}"
-
-### Creating the torrent files
-if [ ${CREATE_TORRENT} -eq 1 ]
-then
-    rm -f "${ZIP_FILENAME}.torrent"
-    echo "Creating torrent file for \"${GAME_NAME}.${ext}\""
-    my_mktorrent "${ZIP_FILENAME}"
-    if [ -d "${GAME_NAME}_update" ]
-    then
-        test -e "${GAME_NAME}_update.torrent" && rm -f "${GAME_NAME}_update.torrent"
-        echo "Creating torrent file for directory \"${GAME_NAME}_update\""
-        my_mktorrent "${GAME_NAME}_update"
-    fi
-    if [ -d "${GAME_NAME}_dlc" ]
-    then
-        test -e "${GAME_NAME}_dlc.torrent" && rm -f "${GAME_NAME}_dlc.torrent"
-        echo "Creating torrent file for directory \"${GAME_NAME}_dlc\""
-        my_mktorrent "${GAME_NAME}_dlc"
-    fi
-fi
 
 ### remove temporary game name file
 rm "${TITLE_ID}.txt"
